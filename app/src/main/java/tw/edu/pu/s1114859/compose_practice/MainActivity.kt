@@ -3,6 +3,17 @@ package tw.edu.pu.s1114859.compose_practice
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateOffsetAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -11,6 +22,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CutCornerShape
@@ -33,6 +47,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import tw.edu.pu.s1114859.compose_practice.ui.theme.Compose_practiceTheme
 
@@ -46,7 +62,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting("Compose實例")
+                   // Greeting("Compose實例")
+                    Animation()
+
                 }
             }
         }
@@ -54,78 +72,73 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    var msg by remember { mutableStateOf("行動應用軟體開發") }
-    Column {
-        Button(onClick = {
-            if (msg=="行動應用軟體開發"){
-                msg="Android App"
-            }else{
-                msg="行動應用軟體開發"
-            }
-        }) {
-            Text(text = msg)
-        }
-        Button(onClick = {},
-            colors=buttonColors(Color.DarkGray),
-            shape = RoundedCornerShape(20.dp),
-            //shape = CutCornerShape(10)
-            border= BorderStroke(1.dp, Color.Blue),
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 10.dp,
-                pressedElevation = 15.dp,
-                disabledElevation = 0.dp
-            )
-        ) {
-            Image(
-                painterResource(id = R.drawable.animal0),
-                contentDescription = "button icon",
-                modifier=Modifier.size(20.dp)
-            )
-            Text(
-                text = "Click",
-                color=Color.Magenta
-            )
-            Text(text = "Here",
-                color = Color.Green
-            )
-        }
-        Row {
-            Text(
-                text = "$name",
-                fontFamily = FontFamily(Font(R.font.kai)),
-                fontSize = 25.sp,
-                color = Color.Blue,
-                modifier = modifier
-            )
-            Image(
-                painter = painterResource(id = R.drawable.compose),
-                contentDescription = "圖片",
-                alpha = 0.7f,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color.Black)
-            )
-        }
-        Box(
-            modifier=Modifier.fillMaxSize(),
-            contentAlignment =Alignment.Center
+fun Animation(){
+    var appear by  remember{ mutableStateOf(true) }//背景出現
+    var expanded by remember{ mutableStateOf(true) }//背景延展
+    var fly by remember { mutableStateOf(false) }//火箭升空
+    //角度動畫
+    val buttonAngle by animateFloatAsState(
+        if (appear)360f else 0f,
+        animationSpec = tween(durationMillis = 2500)
+    )
+    //顏色動畫
+    val backgroundColor by animateColorAsState(
+        if(appear)Color.Transparent else Color.Green,
+        animationSpec = tween(2000,500)
+    )
+    //大小動畫
+    val rocketSize by animateDpAsState(
+        if (fly) 75.dp else 150.dp,
+        animationSpec = tween(2000)
+    )
+    val rocketOffset by animateOffsetAsState(
+        if(fly) Offset(200f,50f) else Offset(200f,400f),
+        animationSpec = tween(2000)
+    )
+    Column(Modifier.background(backgroundColor)) {
+        Button(
+            onClick = {appear=!appear},
+            modifier = Modifier.rotate(buttonAngle)
         ){
-            var count by remember { mutableStateOf(0) }
-            Text(
-                text = count.toString(),
-                fontSize = 50.sp,
-                modifier= Modifier.clickable { count+=1 }
-            )
+            if(appear) Text(text = "星空背景圖消失")
+            else Text(text = "星空背景圖出現")
         }
-    }
+        AnimatedVisibility(
+            visible = appear,
+            enter = fadeIn(
+                initialAlpha = 0.1f,
+                animationSpec = tween(durationMillis = 5000))
+            + slideInHorizontally (
+                animationSpec = tween(durationMillis = 5000)){fullWidth ->
+                fullWidth/3
+            },
+            exit = fadeOut(animationSpec = tween(durationMillis = 5000))
+            + slideOutHorizontally(
+                animationSpec = tween(durationMillis = 5000){fullWidth->
+                    -fullWidth/3
+                }
+            )
+        ){
+            Image(painter = painterResource(id = R.drawable.sky),
+                contentDescription = "星空背景圖",
+            modifier= Modifier
+                .animateContentSize()
+                .fillMaxWidth()
+                .height(if (expanded) 600.dp else 400.dp)
+                .clickable(
+                ) {
+                    expanded = !expanded
+                }
+            )
+            Image(painter = painterResource(id = R.drawable.rocket),
+                contentDescription ="火箭",
+                modifier= Modifier
+                    .size(rocketSize)
+                    .offset(rocketOffset.x.dp,rocketOffset.y.dp)
+                    .clickable {
+                        fly = !fly
+                    })
+        }
 
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Compose_practiceTheme {
-        Greeting("Compose實例")
     }
 }
